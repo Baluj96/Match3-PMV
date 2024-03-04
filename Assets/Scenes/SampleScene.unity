@@ -249,6 +249,17 @@ MonoBehaviour:
   tileObject: {fileID: 1961215219416001526, guid: 359da98f7e35f6b4a88046b1a1e641e7, type: 3}
   camSizeOffset: 0
   camVerticalOffset: 1
+  avalaiblePieces:
+  - {fileID: 1162311575068490802, guid: e491c00ba92571e45beebab3f0987d8e, type: 3}
+  - {fileID: 8488562926889258583, guid: e3ac2321b7ade5a458fd042d66732700, type: 3}
+  - {fileID: 6056191149108930710, guid: 9b8ccf89f868ca24396426eb53b8925c, type: 3}
+  - {fileID: 1299572605080374853, guid: 31f35c5f8f4472c4a87657c1f323318e, type: 3}
+  - {fileID: 369009027752395939, guid: d8024c2a4d03228418227dcaa33f7acf, type: 3}
+  - {fileID: 8956534858997528165, guid: f0862b373292bee40b1eb914b6548805, type: 3}
+  - {fileID: 5224629857465472668, guid: 00f0ccdc8bc4f7149a9d28149bd74a08, type: 3}
+  - {fileID: 3842758177248986105, guid: 24bc88156423bc045a4039144c85b9a2, type: 3}
+  - {fileID: 5863466073004393839, guid: 6017553d0775c37489e9907568731187, type: 3}
+  - {fileID: 2751667629618465532, guid: cf0e47a3b513f5841846630c2aa9c87f, type: 3}
 --- !u!4 &1387803102
 Transform:
   m_ObjectHideFlags: 0
