@@ -98,4 +98,4 @@ MonoBehaviour:
   x: 0
   y: 0
   board: {fileID: 0}
-  pieceType: 0
+  pieceType: 2

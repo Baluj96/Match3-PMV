@@ -25,6 +25,7 @@ public class Board : MonoBehaviour
         SetupBoard();
         PositionCamera();
         SetupPieces();
+        //CheckBoard();
     }
 
     void SetupBoard()
@@ -66,6 +67,17 @@ public class Board : MonoBehaviour
         }
     }
 
+    void CheckBoard()
+    {
+        for (int x = 0; x < width; x++)
+        {
+            for (int y = 0; y < height; y++)
+            {
+                CheckMatch3(Pieces[x,y]);
+            }
+        }
+    }
+
     public void TileDown(Tile tile_)
     {
         startTile = tile_;
@@ -93,9 +105,9 @@ public class Board : MonoBehaviour
         EndPiece.Move(startTile.x, startTile.y);
 
         Pieces[startTile.x, startTile.y] = EndPiece;
-        CheckMatch3(EndPiece);
-
         Pieces[endTile.x, endTile.y] = StartPiece;
+
+        CheckMatch3(EndPiece);
         CheckMatch3(StartPiece); 
     }
 
@@ -157,7 +169,10 @@ public class Board : MonoBehaviour
 
         if (piece_.GetComponent<Piece>().pieceType == pieceUp.GetComponent<Piece>().pieceType)
         {
+            Debug.Log(piece_.GetComponent<Piece>().pieceType + " y " + pieceUp.GetComponent<Piece>().pieceType);
             //Si son iguales, añade la pieza a la lista de columna
+            float aux = pieceUp.gameObject.GetComponent<SpriteRenderer>().color.a - 0.5f;
+            pieceUp.gameObject.GetComponent<SpriteRenderer>().color = new Vector4(255, 255, 255, aux);
             colmnPieces.Add(pieceUp.gameObject);
 
             if (pieceUp.y + 1 <= 9)
@@ -175,6 +190,8 @@ public class Board : MonoBehaviour
         if (piece_.GetComponent<Piece>().pieceType == pieceDown.GetComponent<Piece>().pieceType)
         {
             //Si son iguales, añade la pieza a la lista de columna
+            float aux = pieceDown.gameObject.GetComponent<SpriteRenderer>().color.a - 0.5f;
+            pieceDown.gameObject.GetComponent<SpriteRenderer>().color = new Vector4(255, 255, 255, aux);
             colmnPieces.Add(pieceDown.gameObject);
 
             if (pieceDown.y - 1 >= 0)
@@ -192,6 +209,8 @@ public class Board : MonoBehaviour
         if (piece_.GetComponent<Piece>().pieceType == pieceRight.GetComponent<Piece>().pieceType)
         {
             //Si son iguales, añade la pieza a la lista de fila
+            float aux = pieceRight.gameObject.GetComponent<SpriteRenderer>().color.a - 0.5f;
+            pieceRight.gameObject.GetComponent<SpriteRenderer>().color = new Vector4(255, 255, 255, aux);
             filaPieces.Add(pieceRight.gameObject);
 
             if (pieceRight.x + 1 <= 5)
@@ -209,6 +228,8 @@ public class Board : MonoBehaviour
         if (piece_.GetComponent<Piece>().pieceType == pieceLeft.GetComponent<Piece>().pieceType)
         {
             //Si son iguales, añade la pieza a la lista de fila
+            float aux = pieceLeft.gameObject.GetComponent<SpriteRenderer>().color.a - 0.5f;
+            pieceLeft.gameObject.GetComponent<SpriteRenderer>().color = new Vector4(255, 255, 255, aux);
             filaPieces.Add(pieceLeft.gameObject);
 
             if (pieceLeft.x - 1 >= 0)
