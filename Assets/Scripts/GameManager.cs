@@ -11,7 +11,9 @@ public class GameManager : MonoBehaviour
     public float timeToMatch = 10f;
     public float currentTimeToMatch = 0;
     public Board board;
-    public GameObject gameOver;
+    public GameObject gameOver, uiPoints;
+    bool able;
+
     public enum GameState
     {
         Idle,
@@ -31,21 +33,26 @@ public class GameManager : MonoBehaviour
         {
             Destroy(gameObject);
         }
+
+        StopTime();
     }
 
     public int Points = 0;
     public UnityEvent OnPointsUpdated;
-    // Start is called before the first frame update
 
     void Update()
     {
         if(gameState == GameState.InGame)
         {
-            currentTimeToMatch += Time.deltaTime;
-            if(currentTimeToMatch > timeToMatch )
+            if (able)
             {
-                gameState = GameState.GameOver;
-            }
+                currentTimeToMatch += Time.deltaTime;
+                if (currentTimeToMatch > timeToMatch)
+                {
+                    gameState = GameState.GameOver;
+                    uiPoints.GetComponent<UIPoints>().EndGame();
+                }
+            }            
         }
         if (gameState == GameState.GameOver)
         {
@@ -58,9 +65,15 @@ public class GameManager : MonoBehaviour
         Points += newPoints;
         OnPointsUpdated?.Invoke();
         currentTimeToMatch = 0;
-    } 
- 
+    }
 
-   
-  
+    public void StartTime()
+    {
+        able = true;
+    }
+
+    public void StopTime()
+    {
+        able = false;
+    }
 }
