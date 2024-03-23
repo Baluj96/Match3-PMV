@@ -174,7 +174,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   pointsLabel: {fileID: 42924304}
-  endPoints: {fileID: 0}
+  endPoints: {fileID: 66344193}
 --- !u!114 &42924304
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -285,7 +285,7 @@ GameObject:
   - component: {fileID: 65489466}
   - component: {fileID: 65489465}
   m_Layer: 5
-  m_Name: Button (1)
+  m_Name: ExitGame
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
@@ -417,7 +417,7 @@ GameObject:
   - component: {fileID: 66344194}
   - component: {fileID: 66344193}
   m_Layer: 5
-  m_Name: Text (TMP) (1)
+  m_Name: EndPoints
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
@@ -948,7 +948,7 @@ GameObject:
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
-  m_IsActive: 0
+  m_IsActive: 1
 --- !u!224 &528965309
 RectTransform:
   m_ObjectHideFlags: 0
@@ -1237,7 +1237,7 @@ GameObject:
   - component: {fileID: 680072288}
   - component: {fileID: 680072287}
   m_Layer: 5
-  m_Name: Button
+  m_Name: PlayAgain
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
@@ -2115,6 +2115,18 @@ MonoBehaviour:
           m_StringArgument: 
           m_BoolArgument: 0
         m_CallState: 2
+      - m_Target: {fileID: 955628176}
+        m_TargetAssemblyTypeName: UITimeBar, Assembly-CSharp
+        m_MethodName: StartTime
+        m_Mode: 1
+        m_Arguments:
+          m_ObjectArgument: {fileID: 0}
+          m_ObjectArgumentAssemblyTypeName: UnityEngine.Object, UnityEngine
+          m_IntArgument: 0
+          m_FloatArgument: 0
+          m_StringArgument: 
+          m_BoolArgument: 1
+        m_CallState: 2
 --- !u!114 &1543812581
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -2299,7 +2311,7 @@ GameObject:
   - component: {fileID: 1766305951}
   - component: {fileID: 1766305950}
   m_Layer: 5
-  m_Name: Text (TMP)
+  m_Name: GameOver
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0

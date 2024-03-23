@@ -29,7 +29,7 @@ public class UIPoints : MonoBehaviour
             pointsLabel.text = displayedPoints.ToString();
             if (GameManager.Instance.gameState == GameState.GameOver)
             {
-                endPoints.text = displayedPoints.ToString();
+                endPoints.text = pointsLabel.text + " points";
             }
 
             yield return new WaitForSeconds(0.1f);

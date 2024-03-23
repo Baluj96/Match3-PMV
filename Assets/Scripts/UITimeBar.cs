@@ -9,14 +9,32 @@ public class UITimeBar : MonoBehaviour
     public RectTransform fillRect;
     public Image fillColor;
     public Gradient gradient;
+    bool able;
 
-    // Update is called once per frame
+    private void Start()
+    {
+        StopTime();
+    }
+
     void Update()
     {
-        float factor = GameManager.Instance.currentTimeToMatch/GameManager.Instance.timeToMatch;
-        factor = Mathf.Clamp(factor, 0f, 1f);
-        factor = 1 - factor;
-        fillRect.localScale = new Vector3(factor, 1, 1);
-        fillColor.color = gradient.Evaluate(factor);
+        if (able)
+        {
+            float factor = GameManager.Instance.currentTimeToMatch / GameManager.Instance.timeToMatch;
+            factor = Mathf.Clamp(factor, 0f, 1f);
+            factor = 1 - factor;
+            fillRect.localScale = new Vector3(factor, 1, 1);
+            fillColor.color = gradient.Evaluate(factor);
+        }        
+    }
+
+    public void StartTime()
+    {
+        able = true;
+    }
+
+    public void StopTime()
+    {
+        able = false;
     }
 }
