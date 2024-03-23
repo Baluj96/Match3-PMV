@@ -1,259 +1,387 @@
+using System;
 using System.Collections;
 using System.Collections.Generic;
+using System.Linq;
 using UnityEngine;
-using UnityEngine.Tilemaps;
 
 public class Board : MonoBehaviour
 {
-    public int width, height;
+    public float timeBetweenPieces = 0.05f;
+
+    public int width;
+    public int height;
     public GameObject tileObject;
-    public float camSizeOffset, camVerticalOffset;
-    public GameObject[] avalaiblePieces;
-    List<GameObject> filaPieces = new List<GameObject>();
-    List<GameObject> colmnPieces = new List<GameObject>();
+
+    public float cameraSizeOffset;
+    public float cameraVerticalOffset;
+
+    public int PointsPerMatch;
+
+    public GameObject[] availablePieces;
 
     Tile[,] Tiles;
     Piece[,] Pieces;
 
-    Tile startTile, endTile;
+    Tile startTile;
+    Tile endTile;
 
+    bool swappingPieces = false;
+
+    AudioSource audioSource;
+    public AudioClip startClip, moveClip, matchClip, missClip;
+
+    // Start is called before the first frame update
     void Start()
     {
+
         Tiles = new Tile[width, height];
         Pieces = new Piece[width, height];
+        audioSource = GetComponent<AudioSource>();
 
         SetupBoard();
         PositionCamera();
-        SetupPieces();
-        //CheckBoard();
+        //StartCoroutine(SetupPieces());
     }
 
-    void SetupBoard()
+    public void StartGame()
     {
+        StartCoroutine(SetupPieces());
+    }
+
+    private IEnumerator SetupPieces()
+    {
+        int maxIterations = 50;
+        int currentIteration = 0;
         for (int x = 0; x < width; x++)
         {
             for (int y = 0; y < height; y++)
             {
-                var o = Instantiate(tileObject, new Vector3(x, y, -5), Quaternion.identity, gameObject.transform.GetChild(0).transform);
+                yield return new WaitForSeconds(timeBetweenPieces);
+                if (Pieces[x, y] == null)
+                {
+                    currentIteration = 0;
+                    var newPiece = CreatePieceAt(x, y);
+                    while (HasPreviousMatches(x, y))
+                    {
+                        ClearPieceAt(x, y);
+                        newPiece = CreatePieceAt(x, y);
+                        currentIteration++;
+                        if (currentIteration > maxIterations)
+                        {
+                            break;
+                        }
+                    }
+                }
+            }
+        }
+        yield return null;
+    }
+
+    private void ClearPieceAt(int x, int y)
+    {
+        var pieceToClear = Pieces[x, y];
+        pieceToClear.Remove(true);
+        Pieces[x, y] = null;
+    }
+
+    private Piece CreatePieceAt(int x, int y)
+    {
+        var selectedPiece = availablePieces[UnityEngine.Random.Range(0, availablePieces.Length)];
+        var o = Instantiate(selectedPiece, new Vector3(x, y + 1, -5), Quaternion.identity);
+        o.transform.parent = transform;
+        Pieces[x, y] = o.GetComponent<Piece>();
+        Pieces[x, y].Setup(x, y, this);
+        Pieces[x, y].Move(x, y);
+        return Pieces[x, y];
+    }
+
+    private void PositionCamera()
+    {
+        float newPosX = (float)width / 2f;
+        float newPosY = (float)height / 2f;
+
+        Camera.main.transform.position = new Vector3(newPosX - 0.5f, newPosY - 0.5f + cameraVerticalOffset, -10f);
+
+        float horizontal = width + 1;
+        float vertical = (height / 2) + 1;
+
+        Camera.main.orthographicSize = horizontal > vertical ? horizontal + cameraSizeOffset : vertical + cameraSizeOffset;
+
+    }
+
+    private void SetupBoard()
+    {
+
+        for (int x = 0; x < width; x++)
+        {
+            for (int y = 0; y < height; y++)
+            {
+                var o = Instantiate(tileObject, new Vector3(x, y, -5), Quaternion.identity);
+                o.transform.parent = transform;
                 Tiles[x, y] = o.GetComponent<Tile>();
                 Tiles[x, y]?.Setup(x, y, this);
             }
         }
     }
 
-    void PositionCamera()
-    {
-        float newPosX = (float)width / 2f - 0.5f;
-        float newPosY = (float)height / 2f - 0.5f + camVerticalOffset;
-        Camera.main.transform.position = new Vector3(newPosX, newPosY, -10f);
-
-        float horizontal = width + 1;
-        float vertical = height / 2 + 1;
-        Camera.main.orthographicSize = horizontal > vertical ? horizontal + camSizeOffset : vertical;
-    }
-
-    void SetupPieces()
-    {
-        for (int x = 0; x < width; x++)
-        {
-            for (int y = 0; y < height; y++)
-            {
-                int r = Random.Range(0, avalaiblePieces.Length);
-                var o = Instantiate(avalaiblePieces[r], new Vector3(x, y, -5), Quaternion.identity, gameObject.transform.GetChild(1).transform);
-                o.GetComponent<Piece>().Setup(x,y, this);
-                Pieces[x, y] = o.GetComponent<Piece>();
-                Pieces[x, y]?.Setup(x, y, this);
-            }
-        }
-    }
-
-    void CheckBoard()
-    {
-        for (int x = 0; x < width; x++)
-        {
-            for (int y = 0; y < height; y++)
-            {
-                CheckMatch3(Pieces[x,y]);
-            }
-        }
-    }
-
     public void TileDown(Tile tile_)
     {
-        startTile = tile_;
+        if (!swappingPieces && GameManager.Instance.gameState == GameManager.GameState.InGame)
+        {
+            startTile = tile_;
+        }
     }
 
     public void TileOver(Tile tile_)
     {
-        endTile = tile_;
+        if (!swappingPieces && GameManager.Instance.gameState == GameManager.GameState.InGame)
+        {
+            endTile = tile_;
+        }
     }
 
     public void TileUp(Tile tile_)
     {
-        if (startTile != null && endTile != null && IsCloseUp(startTile,endTile))
+        if (!swappingPieces && GameManager.Instance.gameState == GameManager.GameState.InGame)
         {
-            SwapTiles();
+            if (startTile != null && endTile != null && IsCloseTo(startTile, endTile))
+            {
+                StartCoroutine(SwapTiles());
+            }
         }
     }
 
-    void SwapTiles()
+    IEnumerator SwapTiles()
     {
-        var StartPiece = Pieces[startTile.x, startTile.y];
+        swappingPieces = true;
+        var StarPiece = Pieces[startTile.x, startTile.y];
         var EndPiece = Pieces[endTile.x, endTile.y];
 
-        StartPiece.Move(endTile.x, endTile.y);
+        StarPiece.Move(endTile.x, endTile.y);
         EndPiece.Move(startTile.x, startTile.y);
+        audioSource.clip = moveClip;
+        audioSource.Play();
 
         Pieces[startTile.x, startTile.y] = EndPiece;
-        Pieces[endTile.x, endTile.y] = StartPiece;
+        Pieces[endTile.x, endTile.y] = StarPiece;
 
-        CheckMatch3(EndPiece);
-        CheckMatch3(StartPiece); 
-    }
+        yield return new WaitForSeconds(0.2f);
 
-    void CheckMatch3(Piece piece_)
-    {
-        //Limpia las listas
-        colmnPieces.Clear();
-        filaPieces.Clear();
+        var startMatches = GetMatchByPiece(startTile.x, startTile.y, 3);
+        var endMatches = GetMatchByPiece(endTile.x, endTile.y, 3);
 
-        //Añade la pieza a ambas listas
-        colmnPieces.Add(piece_.gameObject);
-        filaPieces.Add(piece_.gameObject);
 
-        if (piece_.y + 1 <= 9)
+        var allMatches = startMatches.Union(endMatches).ToList();
+
+
+        if (allMatches.Count == 0)
         {
-            //Si la pieza de arriba está dentro de los márgenes comprueba en dicha dirección
-            CheckMatch3Up(piece_);
-        }
-        if (piece_.y - 1 >= 0)
-        {
-            //Si la pieza de abajo está dentro de los márgenes comprueba en dicha dirección
-            CheckMatch3Down(piece_);
-        }
-        if (piece_.x + 1 <= 5)
-        {
-            //Si la pieza de la derecha está dentro de los márgenes comprueba en dicha dirección
-            CheckMatch3Right(piece_);
-        }
-        if (piece_.x - 1 >= 0)
-        {
-            //Si la pieza de la izquierda está dentro de los márgenes comprueba en dicha dirección
-            CheckMatch3Left(piece_);
-        }
-
-        if (colmnPieces.Count >= 3)
-        {
-            //Si hay una columna de al menos 3 piezas de largo, las destruye
-            for (int i = 0; i < colmnPieces.Count; i++)
-            {
-                Destroy(colmnPieces[i]);
-            }
-        }
-
-        if (filaPieces.Count >= 3)
-        {
-            //Si hay una fila de al menos 3 piezas de largo, las destruye
-            for (int i = 0; i < colmnPieces.Count; i++)
-            {
-                Destroy(filaPieces[i]);
-            }
-        }
-    }
-
-
-    void CheckMatch3Up(Piece piece_)
-    {
-        Debug.Log(piece_.y + 1);
-        Piece pieceUp = Pieces[piece_.x, piece_.y + 1];
-
-        if (piece_.GetComponent<Piece>().pieceType == pieceUp.GetComponent<Piece>().pieceType)
-        {
-            Debug.Log(piece_.GetComponent<Piece>().pieceType + " y " + pieceUp.GetComponent<Piece>().pieceType);
-            //Si son iguales, añade la pieza a la lista de columna
-            float aux = pieceUp.gameObject.GetComponent<SpriteRenderer>().color.a - 0.5f;
-            pieceUp.gameObject.GetComponent<SpriteRenderer>().color = new Vector4(255, 255, 255, aux);
-            colmnPieces.Add(pieceUp.gameObject);
-
-            if (pieceUp.y + 1 <= 9)
-            {
-                //Si la pieza de arriba está dentro de los márgenes comprueba en dicha dirección
-                CheckMatch3Up(pieceUp);
-            }
-        }
-    }
-
-    void CheckMatch3Down(Piece piece_)
-    {
-        Piece pieceDown = Pieces[piece_.x, piece_.y - 1];
-
-        if (piece_.GetComponent<Piece>().pieceType == pieceDown.GetComponent<Piece>().pieceType)
-        {
-            //Si son iguales, añade la pieza a la lista de columna
-            float aux = pieceDown.gameObject.GetComponent<SpriteRenderer>().color.a - 0.5f;
-            pieceDown.gameObject.GetComponent<SpriteRenderer>().color = new Vector4(255, 255, 255, aux);
-            colmnPieces.Add(pieceDown.gameObject);
-
-            if (pieceDown.y - 1 >= 0)
-            {
-                //Si la pieza de abajo está dentro de los márgenes comprueba en dicha dirección
-                CheckMatch3Down(pieceDown);
-            }            
-        }
-    }
-
-    void CheckMatch3Right(Piece piece_)
-    {
-        Piece pieceRight = Pieces[piece_.x + 1, piece_.y];
-
-        if (piece_.GetComponent<Piece>().pieceType == pieceRight.GetComponent<Piece>().pieceType)
-        {
-            //Si son iguales, añade la pieza a la lista de fila
-            float aux = pieceRight.gameObject.GetComponent<SpriteRenderer>().color.a - 0.5f;
-            pieceRight.gameObject.GetComponent<SpriteRenderer>().color = new Vector4(255, 255, 255, aux);
-            filaPieces.Add(pieceRight.gameObject);
-
-            if (pieceRight.x + 1 <= 5)
-            {
-                //Si la pieza de la derecha está dentro de los márgenes comprueba en dicha dirección
-                CheckMatch3Right(pieceRight);
-            }
-        }
-    }
-
-    void CheckMatch3Left(Piece piece_)
-    {
-        Piece pieceLeft = Pieces[piece_.x - 1, piece_.y];
-
-        if (piece_.GetComponent<Piece>().pieceType == pieceLeft.GetComponent<Piece>().pieceType)
-        {
-            //Si son iguales, añade la pieza a la lista de fila
-            float aux = pieceLeft.gameObject.GetComponent<SpriteRenderer>().color.a - 0.5f;
-            pieceLeft.gameObject.GetComponent<SpriteRenderer>().color = new Vector4(255, 255, 255, aux);
-            filaPieces.Add(pieceLeft.gameObject);
-
-            if (pieceLeft.x - 1 >= 0)
-            {
-                //Si la pieza de la izquierda está dentro de los márgenes comprueba en dicha dirección
-                CheckMatch3Left(pieceLeft);
-            }
-        }
-    }
-
-    public bool IsCloseUp(Tile start, Tile end)
-    {
-        if (Mathf.Abs(start.x - end.x) == 1 && start.y == end.y)
-        {
-            return true;
-        }
-
-        if (Mathf.Abs(start.y - end.y) == 1 && start.x == end.x)
-        {
-            return true;
+            StarPiece.Move(startTile.x, startTile.y);
+            EndPiece.Move(endTile.x, endTile.y);
+            Pieces[startTile.x, startTile.y] = StarPiece;
+            Pieces[endTile.x, endTile.y] = EndPiece;
+            audioSource.clip = missClip;
+            audioSource.Play();
         }
         else
         {
-            return false;
+            audioSource.clip = matchClip;
+            audioSource.Play();
+            ClearPieces(allMatches);
+            AwardPoints(allMatches);
         }
+
+        startTile = null;
+        endTile = null;
+        swappingPieces = false;
+
+        yield return null;
     }
+
+    private void ClearPieces(List<Piece> piecesToClear)
+    {
+        piecesToClear.ForEach(piece =>
+        {
+            ClearPieceAt(piece.x, piece.y);
+        });
+        List<int> columns = GetColumns(piecesToClear);
+        List<Piece> collapsedPieces = collapseColumns(columns, 0.2f);
+        FindMatchsRecursively(collapsedPieces);
+    }
+
+    private void FindMatchsRecursively(List<Piece> collapsedPieces)
+    {
+        StartCoroutine(FindMatchsRecursivelyCoroutine(collapsedPieces));
+    }
+
+    IEnumerator FindMatchsRecursivelyCoroutine(List<Piece> collapsedPieces)
+    {
+        yield return new WaitForSeconds(0.3f);
+        List<Piece> newMatches = new List<Piece>();
+        collapsedPieces.ForEach(piece =>
+        {
+            var matches = GetMatchByPiece(piece.x, piece.y, 3);
+            if (matches != null)
+            {
+                newMatches = newMatches.Union(matches).ToList();
+                ClearPieces(matches);
+                AwardPoints(matches);
+            }
+        });
+        if (newMatches.Count > 0)
+        {
+            var newCollapsedPieces = collapseColumns(GetColumns(newMatches), 0.1f);
+            FindMatchsRecursively(newCollapsedPieces);
+        }
+        else
+        {
+            yield return new WaitForSeconds(0.1f);
+            StartCoroutine(SetupPieces());
+            swappingPieces = false;
+        }
+        yield return null;
+    }
+
+    private List<int> GetColumns(List<Piece> piecesToClear)
+    {
+        var result = new List<int>();
+
+        piecesToClear.ForEach(piece =>
+        {
+            if (!result.Contains(piece.x))
+            {
+                result.Add(piece.x);
+            }
+        });
+
+        return result;
+    }
+
+    private List<Piece> collapseColumns(List<int> columns, float timeToCollapse)
+    {
+        List<Piece> movingPieces = new List<Piece>();
+
+        for (int i = 0; i < columns.Count; i++)
+        {
+            var column = columns[i];
+            for (int y = 0; y < height; y++)
+            {
+                if (Pieces[column, y] == null)
+                {
+                    for (int yplus = y + 1; yplus < height; yplus++)
+                    {
+                        if (Pieces[column, yplus] != null)
+                        {
+                            Pieces[column, yplus].Move(column, y);
+                            Pieces[column, y] = Pieces[column, yplus];
+                            if (!movingPieces.Contains(Pieces[column, y]))
+                            {
+                                movingPieces.Add(Pieces[column, y]);
+                            }
+                            Pieces[column, yplus] = null;
+                            break;
+                        }
+                    }
+                }
+            }
+        }
+        return movingPieces;
+    }
+
+
+    public bool IsCloseTo(Tile start, Tile end)
+    {
+        if (Math.Abs((start.x - end.x)) == 1 && start.y == end.y)
+        {
+            return true;
+        }
+        if (Math.Abs((start.y - end.y)) == 1 && start.x == end.x)
+        {
+            return true;
+        }
+        return false;
+    }
+
+    bool HasPreviousMatches(int posx, int posy)
+    {
+        var downMatches = GetMatchByDirection(posx, posy, new Vector2(0, -1), 2);
+        var leftMatches = GetMatchByDirection(posx, posy, new Vector2(-1, 0), 2);
+
+        if (downMatches == null) downMatches = new List<Piece>();
+        if (leftMatches == null) leftMatches = new List<Piece>();
+
+        return (downMatches.Count > 0 || leftMatches.Count > 0);
+
+    }
+
+    public List<Piece> GetMatchByDirection(int xpos, int ypos, Vector2 direction, int minPieces = 3)
+    {
+        List<Piece> matches = new List<Piece>();
+        Piece startPiece = Pieces[xpos, ypos];
+        matches.Add(startPiece);
+
+        int nextX;
+        int nextY;
+        int maxVal = width > height ? width : height;
+
+        for (int i = 1; i < maxVal; i++)
+        {
+            nextX = xpos + ((int)direction.x * i);
+            nextY = ypos + ((int)direction.y * i);
+            if (nextX >= 0 && nextX < width && nextY >= 0 && nextY < height)
+            {
+                var nextPiece = Pieces[nextX, nextY];
+                if (nextPiece != null && nextPiece.pieceType == startPiece.pieceType)
+                {
+                    matches.Add(nextPiece);
+                }
+                else
+                {
+                    break;
+                }
+            }
+        }
+
+        if (matches.Count >= minPieces)
+        {
+            return matches;
+        }
+
+        return null;
+    }
+
+    public List<Piece> GetMatchByPiece(int xpos, int ypos, int minPieces = 3)
+    {
+        var upMatchs = GetMatchByDirection(xpos, ypos, new Vector2(0, 1), 2);
+        var downMatchs = GetMatchByDirection(xpos, ypos, new Vector2(0, -1), 2);
+        var rightMatchs = GetMatchByDirection(xpos, ypos, new Vector2(1, 0), 2);
+        var leftMatchs = GetMatchByDirection(xpos, ypos, new Vector2(-1, 0), 2);
+
+        if (upMatchs == null) upMatchs = new List<Piece>();
+        if (downMatchs == null) downMatchs = new List<Piece>();
+        if (rightMatchs == null) rightMatchs = new List<Piece>();
+        if (leftMatchs == null) leftMatchs = new List<Piece>();
+
+        var verticalMatches = upMatchs.Union(downMatchs).ToList();
+        var horizontalMatches = leftMatchs.Union(rightMatchs).ToList();
+
+        var foundMatches = new List<Piece>();
+
+        if (verticalMatches.Count >= minPieces)
+        {
+            foundMatches = foundMatches.Union(verticalMatches).ToList();
+        }
+        if (horizontalMatches.Count >= minPieces)
+        {
+            foundMatches = foundMatches.Union(horizontalMatches).ToList();
+        }
+
+        return foundMatches;
+    }
+
+    public void AwardPoints(List<Piece> allMatches)
+    {
+        GameManager.Instance.AddPoints(allMatches.Count * PointsPerMatch);
+    }
+
 }
