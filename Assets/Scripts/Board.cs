@@ -46,6 +46,13 @@ public class Board : MonoBehaviour
     public void StartGame()
     {
         StartCoroutine(SetupPieces());
+        SoundStart();
+    }
+
+    public void SoundStart()
+    {
+        audioSource.clip = startClip;
+        audioSource.Play();
     }
 
     private IEnumerator SetupPieces()

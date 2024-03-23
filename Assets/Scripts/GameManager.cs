@@ -51,6 +51,7 @@ public class GameManager : MonoBehaviour
                 {
                     gameState = GameState.GameOver;
                     uiPoints.GetComponent<UIPoints>().EndGame();
+                    board.GetComponent<Board>().SoundStart();
                 }
             }            
         }
